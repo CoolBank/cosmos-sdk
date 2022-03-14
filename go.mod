@@ -3,7 +3,6 @@ go 1.15
 module github.com/cosmos/cosmos-sdk
 
 require (
-	github.com/99designs/keyring v1.1.6
 	github.com/armon/go-metrics v0.3.9
 	github.com/bgentry/speakeasy v0.1.0
 	github.com/btcsuite/btcd v0.22.0-beta

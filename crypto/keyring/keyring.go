@@ -8,10 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sort"
-	"strings"
 
-	"github.com/99designs/keyring"
 	bip39 "github.com/cosmos/go-bip39"
 	"github.com/pkg/errors"
 	"github.com/tendermint/crypto/bcrypt"
@@ -24,7 +21,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/ledger"
 	"github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 // Backend options for Keyring
@@ -157,7 +153,7 @@ type Options struct {
 // purposes and on-the-fly key generation.
 // Keybase options can be applied when generating this new Keybase.
 func NewInMemory(opts ...Option) Keyring {
-	return newKeystore(keyring.NewArrayKeyring(nil), opts...)
+	return nil
 }
 
 // New creates a new instance of a keyring.
@@ -166,41 +162,41 @@ func NewInMemory(opts ...Option) Keyring {
 func New(
 	appName, backend, rootDir string, userInput io.Reader, opts ...Option,
 ) (Keyring, error) {
-	var (
-		db  keyring.Keyring
-		err error
-	)
+	// var (
+	// 	db  keyring.Keyring
+	// 	err error
+	// )
 
-	switch backend {
-	case BackendMemory:
-		return NewInMemory(opts...), err
-	case BackendTest:
-		db, err = keyring.Open(newTestBackendKeyringConfig(appName, rootDir))
-	case BackendFile:
-		db, err = keyring.Open(newFileBackendKeyringConfig(appName, rootDir, userInput))
-	case BackendOS:
-		db, err = keyring.Open(newOSBackendKeyringConfig(appName, rootDir, userInput))
-	case BackendKWallet:
-		db, err = keyring.Open(newKWalletBackendKeyringConfig(appName, rootDir, userInput))
-	case BackendPass:
-		db, err = keyring.Open(newPassBackendKeyringConfig(appName, rootDir, userInput))
-	default:
-		return nil, fmt.Errorf("unknown keyring backend %v", backend)
-	}
+	// switch backend {
+	// case BackendMemory:
+	// 	return NewInMemory(opts...), err
+	// case BackendTest:
+	// 	db, err = keyring.Open(newTestBackendKeyringConfig(appName, rootDir))
+	// case BackendFile:
+	// 	db, err = keyring.Open(newFileBackendKeyringConfig(appName, rootDir, userInput))
+	// case BackendOS:
+	// 	db, err = keyring.Open(newOSBackendKeyringConfig(appName, rootDir, userInput))
+	// case BackendKWallet:
+	// 	db, err = keyring.Open(newKWalletBackendKeyringConfig(appName, rootDir, userInput))
+	// case BackendPass:
+	// 	db, err = keyring.Open(newPassBackendKeyringConfig(appName, rootDir, userInput))
+	// default:
+	return nil, fmt.Errorf("unknown keyring backend %v", backend)
+	// }
 
-	if err != nil {
-		return nil, err
-	}
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	return newKeystore(db, opts...), nil
+	// return newKeystore(db, opts...), nil
 }
 
 type keystore struct {
-	db      keyring.Keyring
+	// db      keyring.Keyring
 	options Options
 }
 
-func newKeystore(kr keyring.Keyring, opts ...Option) keystore {
+func newKeystore(opts ...Option) keystore {
 	// Default options for keybase
 	options := Options{
 		SupportedAlgos:       SigningAlgoList{hd.Secp256k1},
@@ -211,7 +207,7 @@ func newKeystore(kr keyring.Keyring, opts ...Option) keystore {
 		optionFn(&options)
 	}
 
-	return keystore{kr, options}
+	return keystore{options}
 }
 
 func (ks keystore) ExportPubKeyArmor(uid string) (string, error) {
@@ -430,72 +426,72 @@ func (ks keystore) DeleteByAddress(address sdk.Address) error {
 }
 
 func (ks keystore) Delete(uid string) error {
-	info, err := ks.Key(uid)
-	if err != nil {
-		return err
-	}
+	// info, err := ks.Key(uid)
+	// if err != nil {
+	// 	return err
+	// }
 
-	err = ks.db.Remove(addrHexKeyAsString(info.GetAddress()))
-	if err != nil {
-		return err
-	}
+	// err = ks.db.Remove(addrHexKeyAsString(info.GetAddress()))
+	// if err != nil {
+	// 	return err
+	// }
 
-	err = ks.db.Remove(infoKey(uid))
-	if err != nil {
-		return err
-	}
+	// err = ks.db.Remove(infoKey(uid))
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
 
 func (ks keystore) KeyByAddress(address sdk.Address) (Info, error) {
-	ik, err := ks.db.Get(addrHexKeyAsString(address))
-	if err != nil {
-		return nil, wrapKeyNotFound(err, fmt.Sprint("key with address", address, "not found"))
-	}
+	// ik, err := ks.db.Get(addrHexKeyAsString(address))
+	// if err != nil {
+	// 	return nil, wrapKeyNotFound(err, fmt.Sprint("key with address", address, "not found"))
+	// }
 
-	if len(ik.Data) == 0 {
-		return nil, wrapKeyNotFound(err, fmt.Sprint("key with address", address, "not found"))
-	}
-	return ks.key(string(ik.Data))
+	// if len(ik.Data) == 0 {
+	// 	return nil, wrapKeyNotFound(err, fmt.Sprint("key with address", address, "not found"))
+	// }
+	return ks.key("")
 }
 
 func wrapKeyNotFound(err error, msg string) error {
-	if err == keyring.ErrKeyNotFound {
-		return sdkerrors.Wrap(sdkerrors.ErrKeyNotFound, msg)
-	}
+	// if err == keyring.ErrKeyNotFound {
+	// 	return sdkerrors.Wrap(sdkerrors.ErrKeyNotFound, msg)
+	// }
 	return err
 }
 
 func (ks keystore) List() ([]Info, error) {
 	var res []Info
 
-	keys, err := ks.db.Keys()
-	if err != nil {
-		return nil, err
-	}
+	// keys, err := ks.db.Keys()
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	sort.Strings(keys)
+	// sort.Strings(keys)
 
-	for _, key := range keys {
-		if strings.HasSuffix(key, infoSuffix) {
-			rawInfo, err := ks.db.Get(key)
-			if err != nil {
-				return nil, err
-			}
+	// for _, key := range keys {
+	// 	if strings.HasSuffix(key, infoSuffix) {
+	// 		rawInfo, err := ks.db.Get(key)
+	// 		if err != nil {
+	// 			return nil, err
+	// 		}
 
-			if len(rawInfo.Data) == 0 {
-				return nil, sdkerrors.Wrap(sdkerrors.ErrKeyNotFound, key)
-			}
+	// 		if len(rawInfo.Data) == 0 {
+	// 			return nil, sdkerrors.Wrap(sdkerrors.ErrKeyNotFound, key)
+	// 		}
 
-			info, err := unmarshalInfo(rawInfo.Data)
-			if err != nil {
-				return nil, err
-			}
+	// 		info, err := unmarshalInfo(rawInfo.Data)
+	// 		if err != nil {
+	// 			return nil, err
+	// 		}
 
-			res = append(res, info)
-		}
-	}
+	// 		res = append(res, info)
+	// 	}
+	// }
 
 	return res, nil
 }
@@ -561,14 +557,14 @@ func (ks keystore) isSupportedSigningAlgo(algo SignatureAlgo) bool {
 }
 
 func (ks keystore) key(infoKey string) (Info, error) {
-	bs, err := ks.db.Get(infoKey)
-	if err != nil {
-		return nil, wrapKeyNotFound(err, infoKey)
-	}
-	if len(bs.Data) == 0 {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrKeyNotFound, infoKey)
-	}
-	return unmarshalInfo(bs.Data)
+	// bs, err := ks.db.Get(infoKey)
+	// if err != nil {
+	// 	return nil, wrapKeyNotFound(err, infoKey)
+	// }
+	// if len(bs.Data) == 0 {
+	// 	return nil, sdkerrors.Wrap(sdkerrors.ErrKeyNotFound, infoKey)
+	// }
+	return unmarshalInfo(nil)
 }
 
 func (ks keystore) Key(uid string) (Info, error) {
@@ -609,55 +605,55 @@ func SignWithLedger(info Info, msg []byte) (sig []byte, pub types.PubKey, err er
 	return sig, priv.PubKey(), nil
 }
 
-func newOSBackendKeyringConfig(appName, dir string, buf io.Reader) keyring.Config {
-	return keyring.Config{
-		ServiceName:              appName,
-		FileDir:                  dir,
-		KeychainTrustApplication: true,
-		FilePasswordFunc:         newRealPrompt(dir, buf),
-	}
-}
+// func newOSBackendKeyringConfig(appName, dir string, buf io.Reader) keyring.Config {
+// 	return keyring.Config{
+// 		ServiceName:              appName,
+// 		FileDir:                  dir,
+// 		KeychainTrustApplication: true,
+// 		FilePasswordFunc:         newRealPrompt(dir, buf),
+// 	}
+// }
 
-func newTestBackendKeyringConfig(appName, dir string) keyring.Config {
-	return keyring.Config{
-		AllowedBackends: []keyring.BackendType{keyring.FileBackend},
-		ServiceName:     appName,
-		FileDir:         filepath.Join(dir, keyringTestDirName),
-		FilePasswordFunc: func(_ string) (string, error) {
-			return "test", nil
-		},
-	}
-}
+// func newTestBackendKeyringConfig(appName, dir string) keyring.Config {
+// 	return keyring.Config{
+// 		AllowedBackends: []keyring.BackendType{keyring.FileBackend},
+// 		ServiceName:     appName,
+// 		FileDir:         filepath.Join(dir, keyringTestDirName),
+// 		FilePasswordFunc: func(_ string) (string, error) {
+// 			return "test", nil
+// 		},
+// 	}
+// }
 
-func newKWalletBackendKeyringConfig(appName, _ string, _ io.Reader) keyring.Config {
-	return keyring.Config{
-		AllowedBackends: []keyring.BackendType{keyring.KWalletBackend},
-		ServiceName:     "kdewallet",
-		KWalletAppID:    appName,
-		KWalletFolder:   "",
-	}
-}
+// func newKWalletBackendKeyringConfig(appName, _ string, _ io.Reader) keyring.Config {
+// 	return keyring.Config{
+// 		AllowedBackends: []keyring.BackendType{keyring.KWalletBackend},
+// 		ServiceName:     "kdewallet",
+// 		KWalletAppID:    appName,
+// 		KWalletFolder:   "",
+// 	}
+// }
 
-func newPassBackendKeyringConfig(appName, _ string, _ io.Reader) keyring.Config {
-	prefix := fmt.Sprintf(passKeyringPrefix, appName)
+// func newPassBackendKeyringConfig(appName, _ string, _ io.Reader) keyring.Config {
+// 	prefix := fmt.Sprintf(passKeyringPrefix, appName)
 
-	return keyring.Config{
-		AllowedBackends: []keyring.BackendType{keyring.PassBackend},
-		ServiceName:     appName,
-		PassPrefix:      prefix,
-	}
-}
+// 	return keyring.Config{
+// 		AllowedBackends: []keyring.BackendType{keyring.PassBackend},
+// 		ServiceName:     appName,
+// 		PassPrefix:      prefix,
+// 	}
+// }
 
-func newFileBackendKeyringConfig(name, dir string, buf io.Reader) keyring.Config {
-	fileDir := filepath.Join(dir, keyringFileDirName)
+// func newFileBackendKeyringConfig(name, dir string, buf io.Reader) keyring.Config {
+// 	fileDir := filepath.Join(dir, keyringFileDirName)
 
-	return keyring.Config{
-		AllowedBackends:  []keyring.BackendType{keyring.FileBackend},
-		ServiceName:      name,
-		FileDir:          fileDir,
-		FilePasswordFunc: newRealPrompt(fileDir, buf),
-	}
-}
+// 	return keyring.Config{
+// 		AllowedBackends:  []keyring.BackendType{keyring.FileBackend},
+// 		ServiceName:      name,
+// 		FileDir:          fileDir,
+// 		FilePasswordFunc: newRealPrompt(fileDir, buf),
+// 	}
+// }
 
 func newRealPrompt(dir string, buf io.Reader) func(string) (string, error) {
 	return func(prompt string) (string, error) {
@@ -755,32 +751,32 @@ func (ks keystore) writeLocalKey(name string, priv types.PrivKey, algo hd.PubKey
 }
 
 func (ks keystore) writeInfo(info Info) error {
-	key := infoKeyBz(info.GetName())
-	serializedInfo := marshalInfo(info)
+	// key := infoKeyBz(info.GetName())
+	// serializedInfo := marshalInfo(info)
 
-	exists, err := ks.existsInDb(info)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return errors.New("public key already exists in keybase")
-	}
+	// exists, err := ks.existsInDb(info)
+	// if err != nil {
+	// 	return err
+	// }
+	// if exists {
+	// 	return errors.New("public key already exists in keybase")
+	// }
 
-	err = ks.db.Set(keyring.Item{
-		Key:  string(key),
-		Data: serializedInfo,
-	})
-	if err != nil {
-		return err
-	}
+	// err = ks.db.Set(keyring.Item{
+	// 	Key:  string(key),
+	// 	Data: serializedInfo,
+	// })
+	// if err != nil {
+	// 	return err
+	// }
 
-	err = ks.db.Set(keyring.Item{
-		Key:  addrHexKeyAsString(info.GetAddress()),
-		Data: key,
-	})
-	if err != nil {
-		return err
-	}
+	// err = ks.db.Set(keyring.Item{
+	// 	Key:  addrHexKeyAsString(info.GetAddress()),
+	// 	Data: key,
+	// })
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
@@ -788,17 +784,17 @@ func (ks keystore) writeInfo(info Info) error {
 // existsInDb returns true if key is in DB. Error is returned only when we have error
 // different thant ErrKeyNotFound
 func (ks keystore) existsInDb(info Info) (bool, error) {
-	if _, err := ks.db.Get(addrHexKeyAsString(info.GetAddress())); err == nil {
-		return true, nil // address lookup succeeds - info exists
-	} else if err != keyring.ErrKeyNotFound {
-		return false, err // received unexpected error - returns error
-	}
+	// if _, err := ks.db.Get(addrHexKeyAsString(info.GetAddress())); err == nil {
+	// 	return true, nil // address lookup succeeds - info exists
+	// } else if err != keyring.ErrKeyNotFound {
+	// 	return false, err // received unexpected error - returns error
+	// }
 
-	if _, err := ks.db.Get(infoKey(info.GetName())); err == nil {
-		return true, nil // uid lookup succeeds - info exists
-	} else if err != keyring.ErrKeyNotFound {
-		return false, err // received unexpected error - returns
-	}
+	// if _, err := ks.db.Get(infoKey(info.GetName())); err == nil {
+	// 	return true, nil // uid lookup succeeds - info exists
+	// } else if err != keyring.ErrKeyNotFound {
+	// 	return false, err // received unexpected error - returns
+	// }
 
 	// both lookups failed, info does not exist
 	return false, nil
